@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <title>冷氣節能製冷系統</title>
+    <style>
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        footer {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #fff; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3); 
+            letter-spacing: 1px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            padding: 40px;
+            text-align: center;
+            width: 350px; /* 稍微加寬以容納圖示 */
+            animation: fadeIn 1s ease;
+            position: relative; 
+        }
+
+        .data-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        
+        .data-block {
+            flex: 1;
+            padding: 10px;
+            border-right: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .data-block:last-child {
+            border-right: none;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #0078d7;
+            min-height: 45px;
+        }
+
+        .unit {
+            font-size: 16px;
+            color: #555;
+            margin-left: 2px;
+        }
+
+        /* === 電池圖示樣式 === */
+        .battery-container {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .battery-shell {
+            width: 45px;
+            height: 18px;
+            border: 2px solid #555;
+            border-radius: 3px;
+            position: relative;
+            padding: 1px;
+        }
+
+        .battery-shell::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 4px;
+            width: 3px;
+            height: 6px;
+            background: #555;
+            border-radius: 0 1px 1px 0;
+        }
+
+        .battery-level {
+            height: 100%;
+            width: 0%;
+            background-color: #4caf50;
+            transition: width 0.5s ease, background-color 0.5s ease;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        button {
+            margin-top: 25px;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: #0078d7;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #005a9e;
+            transform: scale(1.05);
+        }
+        
+        .fixed-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
+            margin: 0;
+            font-size: 20px;
+            line-height: 40px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        #infoBtn { background: #f7b731; }
+        #configBtn { background: #6c757d; }
+
+        /* Modal 樣式省略，保持與您原始程式碼一致... */
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+        .modal-content { background-color: #fff; padding: 30px; border-radius: 12px; position: relative; }
+        .modal-content.large-modal { width: 90%; max-width: 550px; text-align: left; }
+        .modal-content.small-modal { max-width: 350px; text-align: center; }
+        .close { position: absolute; top: 15px; right: 25px; font-size: 32px; cursor: pointer; }
+        .info-section, .config-section { margin-bottom: 20px; padding: 15px; background: #f7f9fc; border-left: 5px solid #0078d7; border-radius: 6px; }
+        input { width: 80%; padding: 8px; margin-top: 5px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>冷氣節能製冷系統<h1>
+        <div class="data-container">
+            <div class="data-block">
+                <h1>溫度</h1>
+                <div class="value">
+                    <span id="temp">--</span><span class="unit">°C</span>
+                </div>
+            </div>
+            
+            <div class="data-block">
+                <h1>電壓</h1>
+                <div class="value">
+                    <span id="voltage">--</span><span class="unit">V</span>
+                </div>
+                <div class="battery-container">
+                    <div class="battery-shell">
+                        <div id="batteryLevel" class="battery-level"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p id="status">等待資料</p>
+        <button id="fanBtn">手動開啟風扇</button>
+    </div>
+
+    <div class="fixed-buttons">
+        <button id="configBtn" class="action-btn">⚙️</button>
+        <button id="infoBtn" class="action-btn">i</button>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content large-modal">
+            <span class="close info-close">&times;</span>
+            <h2>系統資訊與說明</h2>
+            <div class="info-section">
+                <h3>使用說明</h3>
+                <p><strong>自動模式:</strong> 依據設定之溫度閥值控制。</p>
+                <p><strong>電池圖示:</strong> 顯示 18650 電池組當前剩餘估算電量。</p>
+            </div>
+            <div class="info-section">
+                <h3>版權聲明</h3>
+                <p>版權所有 © 赫拉克勒斯計畫開發小組</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusModal" class="modal">
+        <div class="modal-content small-modal">
+            <span class="close status-close">&times;</span>
+            <h3 id="modalTitle">操作結果</h3>
+            <p id="modalMessage">正在等待...</p>
+            <button id="modalCloseBtn">確定</button>
+        </div>
+    </div>
+
+    <div id="configModal" class="modal">
+        <div class="modal-content large-modal">
+            <span class="close config-close">&times;</span>
+            <h2>⚙️ 系統設定</h2>
+            <div class="config-section">
+                <h3>ESP32 IP 設置</h3>
+                <input type="text" id="ipInput">
+                <p id="currentIPStatus"></p>
+            </div>
+            <div class="config-section">
+                <h3>溫度控制閥值</h3>
+                <input type="number" id="tempLimitInput" step="0.5">
+                <p id="currentTempLimitStatus"></p>
+            </div>
+            <button id="saveConfigBtn" style="background: #28a745;">儲存設定</button>
+            <p id="configStatusMessage"></p>
+        </div>
+    </div>
+
+    <footer>版權所有 © 赫拉克勒斯計畫開發小組 保留一切權利</footer>
+    <script src="ctrl.js"></script>
+    <script>
+        const modals = ['infoModal', 'statusModal', 'configModal'];
+        window.onclick = (e) => {
+            modals.forEach(id => {
+                const m = document.getElementById(id);
+                if (e.target == m) m.style.display = "none";
+            });
+        };
+    </script>
+</body>
+</html>
