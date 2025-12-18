@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赫拉克勒斯計畫 - 智慧灌溉控制</title>
+    <style>
+        :root {
+            --primary-bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-main: #333;
+            --blue: #0078d7;
+            --green: #28a745;
+            --red: #e53935;
+            --orange: #ff9800;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden; /* 確保標題圓角 */
+            position: relative;
+        }
+
+        /* === 新增：頂部標題區域 === */
+        .header-area {
+            background: linear-gradient(135deg, var(--blue) 0%, #005fa3 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: white;
+        }
+        .header-area h2 { margin: 0; font-size: 1.5em; letter-spacing: 1px; }
+        .header-area p { margin: 5px 0 0; font-size: 0.85em; opacity: 0.8; }
+
+        .content-body { padding: 25px; }
+
+        .settings-btn {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #ccc;
+            transition: color 0.3s;
+        }
+        .settings-btn:hover { color: var(--blue); }
+
+        .data-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #edf2f7;
+        }
+        .data-label { font-weight: bold; font-size: 1em; color: #666; }
+        .data-value { font-size: 1.5em; font-weight: bold; color: var(--blue); }
+        .unit { font-size: 0.6em; margin-left: 5px; color: #999; }
+
+        /* === 電池圖示 === */
+        .battery-shell {
+            width: 40px;
+            height: 16px;
+            border: 2px solid #666;
+            border-radius: 4px;
+            position: relative;
+            padding: 1.5px;
+            background: #fff;
+            margin-top: 5px;
+        }
+        .battery-shell::after {
+            content: '';
+            position: absolute;
+            right: -5px;
+            top: 3px;
+            width: 3px;
+            height: 6px;
+            background: #666;
+            border-radius: 0 2px 2px 0;
+        }
+        .battery-level {
+            height: 100%;
+            width: 0%;
+            background-color: var(--green);
+            transition: width 0.5s ease;
+            border-radius: 1px;
+        }
+
+        .status-box {
+            padding: 15px;
+            border-radius: 10px;
+            background: #fff9db;
+            border: 1px solid #fff3bf;
+            margin: 20px 0;
+            line-height: 1.6;
+            font-size: 0.95em;
+            color: #856404;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.3s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-green { background-color: var(--green); }
+        .btn-blue { background-color: var(--blue); }
+        .btn:disabled { background-color: #cbd5e0; cursor: not-allowed; }
+
+        .footer { text-align: center; font-size: 0.8em; color: #a0aec0; margin-top: 20px; padding-bottom: 20px; }
+
+        /* Modal 略 (保持原樣) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 80%; max-width: 300px; text-align: center; }
+        .modal-content input { width: 90%; padding: 10px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-area">
+        <h2>智慧灌溉系統</h2>
+        <p>赫拉克勒斯計畫 | 節能溫控 V2.5</p>
+    </div>
+
+    <div class="content-body">
+        <div class="data-card">
+            <span class="data-label">土壤濕度</span>
+            <div>
+                <span id="moisture" class="data-value">--</span>
+                <span class="unit">%</span>
+            </div>
+        </div>
+
+        <div class="data-card">
+            <span class="data-label">電池電壓 (18650)</span>
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <div>
+                    <span id="voltage" class="data-value">--</span>
+                    <span class="unit">V</span>
+                </div>
+                <div class="battery-shell">
+                    <div id="batteryLevel" class="battery-level"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="status" class="status-box">
+            系統初始化中...
+        </div>
+
+        <button id="actionBtn" class="btn btn-green">正在連線...</button>
+
+        <div class="footer">ESP32 控制中心 © 2024</div>
+    </div>
+
+    <button class="settings-btn" onclick="openModal()">⚙️</button>
+</div>
+
+<div id="ipModal" class="modal">
+    <div class="modal-content">
+        <h3>設定 ESP32 IP</h3>
+        <input type="text" id="ipInput" placeholder="192.168.x.x">
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-blue" style="padding: 10px;" onclick="saveIP()">儲存</button>
+            <button class="btn" style="padding: 10px; background: #edeff2; color:#4a5568;" onclick="closeModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DEFAULT_IP = "192.168.99.182"; 
+    let HOST_IP = localStorage.getItem("esp32_ip") || window.location.hostname || DEFAULT_IP;
+
+    const moistureEl = document.getElementById("moisture");
+    const voltageEl  = document.getElementById("voltage");
+    const batteryLevelEl = document.getElementById("batteryLevel");
+    const statusEl   = document.getElementById("status");
+    const actionBtn  = document.getElementById("actionBtn");
+    const ipModal    = document.getElementById("ipModal");
+    const ipInput    = document.getElementById("ipInput");
+
+    let isManualOverride = false;
+
+    function getUrls() {
+        return {
+            moisture: `http://${HOST_IP}/moisture`,
+            control: `http://${HOST_IP}/control`,
+            autoMode: `http://${HOST_IP}/mode/auto`
+        };
+    }
+
+    async function updateSystem() {
+        const urls = getUrls();
+        try {
+            const res = await fetch(urls.moisture, { mode: 'cors' });
+            const data = await res.json();
+
+            const smVal = parseFloat(data.sm) || 0;
+            const vVal = parseFloat(data.voltage) || 0;
+            
+            moistureEl.textContent = smVal.toFixed(1);
+            voltageEl.textContent = vVal.toFixed(2);
+            
+            // --- 核心修改：單節 18650 邏輯 ---
+            // 範圍: 3.0V (空) ~ 4.2V (滿)
+            const minV = 3.0;
+            const maxV = 4.2;
+            let percent = ((vVal - minV) / (maxV - minV)) * 100;
+            percent = Math.max(0, Math.min(100, percent));
+            
+            batteryLevelEl.style.width = percent + "%";
+
+            // 18650 變色判斷
+            if (vVal < 3.4) {
+                voltageEl.style.color = "var(--red)";
+                batteryLevelEl.style.backgroundColor = "var(--red)";
+            } else if (vVal < 3.7) {
+                voltageEl.style.color = "var(--orange)";
+                batteryLevelEl.style.backgroundColor = "var(--orange)";
+            } else {
+                voltageEl.style.color = "var(--green)";
+                batteryLevelEl.style.backgroundColor = "var(--green)";
+            }
+            // --------------------------------
+
+            let waterStatus = data.wl ? "🔴 缺水 (低水位)" : (data.wh ? "🔵 滿水位" : "🟢 正常");
+            let modeStatus = data.mode === 'manual' ? "【手動模式】" : "【自動模式】";
+            let valveStatus = `補水:${data.win ? 'ON':'OFF'} | 灌溉:${data.wout ? 'ON':'OFF'}`;
+            
+            statusEl.innerHTML = `<strong>${modeStatus}</strong><br>水位：${waterStatus}<br>${valveStatus}`;
+
+            if (data.mode === 'manual') {
+                isManualOverride = true;
+                actionBtn.textContent = "切換回自動模式";
+                actionBtn.className = "btn btn-blue"; 
+            } else {
+                isManualOverride = false;
+                actionBtn.textContent = "手動啟動灌溉";
+                actionBtn.className = "btn btn-green";
+            }
+            actionBtn.disabled = false;
+
+        } catch (e) {
+            statusEl.innerHTML = `<span style='color:red'>⚠️ 無法連線至 ${HOST_IP}</span>`;
+            voltageEl.textContent = "--";
+            batteryLevelEl.style.width = "0%";
+            actionBtn.disabled = true;
+        }
+    }
+
+    actionBtn.onclick = async () => {
+        const urls = getUrls();
+        actionBtn.disabled = true;
+        try {
+            if (!isManualOverride) {
+                await fetch(urls.control, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wout: true }) });
+            } else {
+                await fetch(urls.autoMode);
+            }
+            setTimeout(updateSystem, 500);
+        } catch (e) {
+            alert("指令傳送失敗");
+        } finally {
+            actionBtn.disabled = false;
+        }
+    };
+
+    function openModal() { ipInput.value = HOST_IP; ipModal.style.display = "flex"; }
+    function closeModal() { ipModal.style.display = "none"; }
+    function saveIP() {
+        const newIP = ipInput.value.trim();
+        if (newIP) {
+            HOST_IP = newIP;
+            localStorage.setItem("esp32_ip", newIP);
+            closeModal();
+            updateSystem();
+        }
+    }
+
+    setInterval(updateSystem, 2000);
+    updateSystem();
+</script>
+
+</body>
+</html>
