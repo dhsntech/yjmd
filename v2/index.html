@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <title>冷氣節能製冷系統</title>
+    <style>
+        :root {
+            --blue-main: #0078d7;
+            --green: #28a745;
+            --red: #e53935;
+            --orange: #f7b731;
+        }
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            margin: 0; padding: 0;
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+        footer {
+            position: absolute; bottom: 20px; width: 100%;
+            text-align: center; font-size: 14px; color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3); letter-spacing: 1px;
+        }
+        .card {
+            background: #fff; border-radius: 20px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+            text-align: center; width: 320px;
+            animation: fadeIn 1s ease; position: relative;
+            overflow: hidden; /* 確保標題背景不會超出圓角 */
+        }
+
+        /* === 新增：標題區域 === */
+        .card-header {
+            background: #2c3e50;
+            padding: 20px;
+            color: white;
+        }
+        .card-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; }
+        .card-header p { margin: 5px 0 0; font-size: 12px; opacity: 0.7; }
+
+        .card-body { padding: 30px 20px; }
+
+        /* 電壓數值 */
+        .value-container {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            margin-bottom: 10px;
+        }
+        .value { font-size: 64px; font-weight: bold; color: var(--blue-main); line-height: 1; }
+        .unit { font-size: 20px; color: #888; margin-left: 5px; }
+
+        /* === 電池圖示 === */
+        .battery-container {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; margin: 5px 0;
+        }
+        .battery-shell {
+            width: 55px; height: 24px;
+            border: 2.5px solid #444; border-radius: 5px;
+            position: relative; padding: 2px; background: #fff;
+        }
+        .battery-shell::after {
+            content: ''; position: absolute; right: -7px; top: 6px;
+            width: 4px; height: 8px; background: #444;
+            border-radius: 0 2px 2px 0;
+        }
+        .battery-level {
+            height: 100%; width: 0%; 
+            background-color: var(--green);
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;
+            border-radius: 1px;
+        }
+
+        #status { margin-top: 20px; font-size: 13px; color: #777; min-height: 20px; }
+
+        /* 固定按鈕 */
+        .fixed-buttons { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 12px; z-index: 10; }
+        .action-btn {
+            width: 48px; height: 48px; border-radius: 50%; border: none;
+            font-size: 20px; color: white; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.3s;
+        }
+        #infoBtn { background: var(--orange); }
+        #configBtn { background: #6c757d; }
+        .action-btn:hover { transform: scale(1.1); }
+
+        /* Modal */
+        .modal {
+            display: none; position: fixed; z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #fff; padding: 30px; border-radius: 15px;
+            position: relative; width: 85%; max-width: 400px;
+            animation: modalOpen 0.4s ease;
+        }
+        .close { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #aaa; }
+        .config-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 5px solid var(--blue-main); text-align: left; }
+        input { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes modalOpen { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>馬桶發電系統</h2>
+            <p>赫拉克勒斯計畫 | v2</p>
+        </div>
+
+        <div class="card-body">
+            <h3>電壓</h3>
+            <div class="value-container">
+                <div class="value">
+                    <span id="voltage">--</span><span class="unit">V</span>
+                </div>
+                <div class="battery-container">
+                    <div class="battery-shell">
+                        <div id="batteryLevel" class="battery-level"></div>
+                    </div>
+                </div>
+            </div>
+            <p id="status">等待連線中...</p>
+        </div>
+    </div>
+
+    <div class="fixed-buttons">
+        <button id="configBtn" class="action-btn">⚙️</button>
+        <button id="infoBtn" class="action-btn">i</button>
+    </div>
+
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 style="margin-top:0">⚙️ 通訊設定</h2>
+            <div class="config-section">
+                <label>ESP32 IP 位址：</label>
+                <input type="text" id="ipInput" placeholder="例如: 192.168.1.100">
+                <p id="currentIP" style="font-size:12px; color: #888; margin-top:10px;">目前 IP: --</p>
+            </div>
+            <button id="saveBtn" style="width:100%; padding:14px; background:var(--green); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">儲存並連線</button>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 style="margin-top:0">系統說明</h2>
+            <p><strong>電池型號：</strong>18650 鋰電池 (單節)</p>
+            <p><strong>工作範圍：</strong>3.0V (0%) ~ 4.2V (100%)</p>
+            <p><strong>更新頻率：</strong>每 3 秒自動獲取一次最新數據。</p>
+            <hr>
+            <p style="font-size: 12px; color: #888;">版權所有 © 赫拉克勒斯計畫開發小組</p>
+        </div>
+    </div>
+
+    <footer>版權所有 © 赫拉克勒斯計畫開發小組 保留一切權利</footer>
+
+    <script>
+        const DEFAULT_IP = "10.135.58.117";
+        let esp32Ip = localStorage.getItem('esp32_ip') || DEFAULT_IP;
+
+        const voltageText = document.getElementById('voltage');
+        const batteryBar = document.getElementById('batteryLevel');
+        const statusText = document.getElementById('status');
+        const ipInput = document.getElementById('ipInput');
+        const currentIPDisplay = document.getElementById('currentIP');
+
+        async function updateData() {
+            try {
+                const response = await fetch(`http://${esp32Ip}/v`, { signal: AbortSignal.timeout(2500) });
+                const data = await response.json();
+                const v = parseFloat(data.voltage);
+
+                if (!isNaN(v)) {
+                    voltageText.textContent = v.toFixed(2);
+                    
+                    // --- 18650 電池邏輯 (3.0V ~ 4.2V) ---
+                    const minV = 3.0;
+                    const maxV = 4.2;
+                    let percent = ((v - minV) / (maxV - minV)) * 100;
+                    percent = Math.max(2, Math.min(100, percent)); 
+
+                    batteryBar.style.width = percent + "%";
+
+                    // 18650 顏色判斷
+                    if (v < 3.4) {
+                        voltageText.style.color = "#e53935"; // 紅色 (低電量)
+                        batteryBar.style.backgroundColor = "#e53935";
+                    } else if (v < 3.7) {
+                        voltageText.style.color = "#f7b731"; // 橘色 (警告)
+                        batteryBar.style.backgroundColor = "#f7b731";
+                    } else {
+                        voltageText.style.color = "#0078d7"; // 藍色 (正常)
+                        batteryBar.style.backgroundColor = "#28a745"; // 綠色
+                    }
+
+                    statusText.textContent = `連線正常 (${new Date().toLocaleTimeString()})`;
+                    statusText.style.color = "#666";
+                }
+            } catch (err) {
+                voltageText.textContent = "--";
+                voltageText.style.color = "#ccc";
+                batteryBar.style.width = "0%";
+                statusText.textContent = "無法連線至 ESP32，請檢查 IP";
+                statusText.style.color = "#e53935";
+            }
+        }
+
+        // Modal 控制邏輯
+        const configModal = document.getElementById('configModal');
+        const infoModal = document.getElementById('infoModal');
+
+        document.getElementById('configBtn').onclick = () => {
+            ipInput.value = esp32Ip;
+            currentIPDisplay.textContent = `目前 IP: ${esp32Ip}`;
+            configModal.style.display = 'flex';
+        };
+
+        document.getElementById('infoBtn').onclick = () => infoModal.style.display = 'flex';
+
+        document.querySelectorAll('.close').forEach(btn => {
+            btn.onclick = () => {
+                configModal.style.display = 'none';
+                infoModal.style.display = 'none';
+            }
+        });
+
+        document.getElementById('saveBtn').onclick = () => {
+            const newIp = ipInput.value.trim();
+            if (newIp) {
+                localStorage.setItem('esp32_ip', newIp);
+                esp32Ip = newIp;
+                configModal.style.display = 'none';
+                updateData();
+            }
+        };
+
+        window.onclick = (e) => {
+            if (e.target.className === 'modal') {
+                configModal.style.display = 'none';
+                infoModal.style.display = 'none';
+            }
+        };
+
+        setInterval(updateData, 3000);
+        updateData();
+    </script>
+</body>
+</html>
